@@ -3494,3 +3494,31 @@ async def test_get_async_streaming_response_iterator_yields_small_frame_before_u
     remaining: Final = tuple([chunk async for chunk in iterator])
     assert any(chunk.startswith(b"event: message_stop\n") for chunk in remaining), remaining
     await iterator.aclose()
+
+
+@pytest.mark.usefixtures("local_model_cost_map", "local_beta_headers_config")
+@pytest.mark.parametrize("nested_effort", [False, True])
+@pytest.mark.parametrize("explicit_beta", [False, True])
+def test_bedrock_messages_mid_conversation_effort_beta(nested_effort: bool, explicit_beta: bool) -> None:
+    from litellm.types.llms.anthropic import ANTHROPIC_MID_CONVERSATION_OUTPUT_CONFIG_BETA_HEADER
+    from litellm.types.router import GenericLiteLLMParams
+
+    beta: Final = ANTHROPIC_MID_CONVERSATION_OUTPUT_CONFIG_BETA_HEADER
+
+    messages: Final = [
+        {"role": "user", "content": "Hello"},
+        *([{"role": "system", "content": [], "output_config": {"effort": "high"}}] if nested_effort else []),
+        {"role": "user", "content": "Reply with OK"},
+    ]
+
+    result: Final = AmazonAnthropicClaudeMessagesConfig().transform_anthropic_messages_request(
+        model="global.anthropic.claude-fable-5-1",
+        messages=messages,
+        anthropic_messages_optional_request_params={"max_tokens": 1024, "output_config": {"effort": "high"}},
+        litellm_params=GenericLiteLLMParams(),
+        headers={"anthropic-beta": beta} if explicit_beta else {},
+    )
+
+    assert result.get("anthropic_beta", []).count(beta) == int(nested_effort or explicit_beta)
+    assert result["messages"] == messages
+    assert result["output_config"] == {"effort": "high"}

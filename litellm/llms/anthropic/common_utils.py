@@ -31,11 +31,12 @@ from litellm.llms.base_llm.base_utils import BaseLLMModelInfo, BaseTokenCounter
 from litellm.llms.base_llm.chat.transformation import BaseLLMException
 from litellm.types.llms.anthropic import (
     ANTHROPIC_HOSTED_TOOLS,
+    ANTHROPIC_MID_CONVERSATION_OUTPUT_CONFIG_BETA_HEADER,
     ANTHROPIC_OAUTH_BETA_HEADER,
     ANTHROPIC_OAUTH_TOKEN_PREFIX,
     AllAnthropicToolsValues,
     AnthropicMcpServerTool,
-    AnthropicMessagesToolChoice, ANTHROPIC_MID_CONVERSATION_OUTPUT_CONFIG_BETA_HEADER,
+    AnthropicMessagesToolChoice,
 )
 from litellm.types.llms.openai import AllMessageValues
 from litellm.types.proxy.model_listing import ModelInfoResponse
@@ -929,6 +930,7 @@ class AnthropicModelInfo(BaseLLMModelInfo):
         container_with_skills_used: bool = False,
         api_base: str | None = None,
         use_bearer_for_custom_base: bool = False,
+        is_mid_output_config_used: bool = False,
     ) -> dict:
         betas: Final = set()
         # Anthropic no longer requires the prompt-caching beta header
@@ -963,6 +965,9 @@ class AnthropicModelInfo(BaseLLMModelInfo):
         # Container with skills uses a separate beta header
         if container_with_skills_used:
             betas.add("skills-2025-10-02")
+
+        if is_mid_output_config_used:
+            betas.add(ANTHROPIC_MID_CONVERSATION_OUTPUT_CONFIG_BETA_HEADER)
 
         _is_oauth: Final = api_key and api_key.startswith(ANTHROPIC_OAUTH_TOKEN_PREFIX)
         headers: Final = {
