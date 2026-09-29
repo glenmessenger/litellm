@@ -528,6 +528,7 @@ class AmazonAnthropicClaudeMessagesConfig(
                 anthropic_messages_optional_request_params.get("mcp_servers")
             ),
             custom_llm_provider="bedrock",
+            is_mid_output_config_used=anthropic_model_info.is_mid_output_config_used(messages_typed)
         )
         beta_set.update(auto_betas)
 
